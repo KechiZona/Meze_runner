@@ -1,5 +1,8 @@
 package com.azset.mazerunner;
 
+import com.azset.mazerunner.map.GameMap;
+import com.azset.mazerunner.map.MapLoader;
+import com.azset.mazerunner.map.MapRenderer;
 import com.azset.mazerunner.model.Player;
 import com.badlogic.gdx.Game;
 import com.badlogic.gdx.Gdx;
@@ -10,6 +13,7 @@ import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
 import com.badlogic.gdx.utils.ScreenUtils;
+import com.badlogic.gdx.utils.viewport.FitViewport;
 
 public class MazeRunnerGame extends Game {
     private ShapeRenderer shapes;
@@ -17,6 +21,9 @@ public class MazeRunnerGame extends Game {
     private Player player;
     private SpriteBatch batch;
     private Texture playerTexture;
+    private FitViewport viewport;
+
+    private MapRenderer mapRenderer;
 
     @Override
     public void create() {
@@ -34,9 +41,29 @@ public class MazeRunnerGame extends Game {
         );
 
         cam = new OrthographicCamera();
-        cam.setToOrtho(false);
 
-        player = new Player(30, 30, 32);
+
+        player = new Player(0, 112, 16);
+
+
+        MapLoader loader = new MapLoader();
+
+        GameMap map = loader.load("maps/level1.properties");
+
+        float worldWidth = map.getWidth() * map.getTileSize();
+        float worldHeight = map.getHeight() * map.getTileSize();
+
+        viewport = new FitViewport(worldWidth, worldHeight, cam);
+
+        viewport.update(
+                Gdx.graphics.getWidth(),
+                Gdx.graphics.getHeight(),
+                true
+        );
+
+        mapRenderer = new MapRenderer(map, batch);
+
+        mapRenderer = new MapRenderer(map, batch);
     }
 
     @Override
@@ -44,16 +71,16 @@ public class MazeRunnerGame extends Game {
         float dt = Gdx.graphics.getDeltaTime();
 
         if (Gdx.input.isKeyPressed(Input.Keys.W)) {
-            player.move(0, 1, dt);
+            player.move(0, 0.6f, dt);
         }
         if (Gdx.input.isKeyPressed(Input.Keys.S)) {
-            player.move(0, -1, dt);
+            player.move(0, -0.6f, dt);
         }
         if (Gdx.input.isKeyPressed(Input.Keys.A)) {
-            player.move(-1, 0, dt);
+            player.move(-0.6f, 0, dt);
         }
         if (Gdx.input.isKeyPressed(Input.Keys.D)) {
-            player.move(1, 0, dt);
+            player.move(0.6f, 0, dt);
         }
 
 
@@ -62,8 +89,11 @@ public class MazeRunnerGame extends Game {
         cam.update();
 
         batch.setProjectionMatrix(cam.combined);
+        mapRenderer.render();
 
         batch.begin();
+
+
 
         batch.draw(
                 playerTexture,
@@ -78,11 +108,11 @@ public class MazeRunnerGame extends Game {
 
     @Override
     public void resize(int width, int height) {
-        cam.setToOrtho(false, width, height);
+        viewport.update(width, height, true);
     }
-
     @Override
     public void dispose() {
+        mapRenderer.dispose();
         batch.dispose();
         playerTexture.dispose();
     }

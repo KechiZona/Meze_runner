@@ -2,19 +2,18 @@ package com.azset.mazerunner.map;
 import java.util.Properties;
 
 public class GameMap {
-    // 1. Burada map-in ölçülərini saxlayan field-ləri yazacağıq.
     private final int width;
     private final int height;
     private final int tileSize;
 
-
-
-    // 2. Burada tile-ları saxlayan 2D array olacaq.
     private final TileType[][] tiles;
 
-    // 3. Constructor
-
     public GameMap(Properties properties){
+
+        if(Integer.parseInt(properties.getProperty("width"))<=0 || Integer.parseInt(properties.getProperty("height"))<=0 || Integer.parseInt(properties.getProperty("tileSize")) <= 0){
+            throw new IllegalArgumentException("Map dimensions must be positive");
+        }
+
         this.width = Integer.parseInt(properties.getProperty("width"));
         this.height = Integer.parseInt(properties.getProperty("height"));
         this.tileSize = Integer.parseInt(properties.getProperty("tileSize"));
@@ -24,19 +23,19 @@ public class GameMap {
         int entryCount = 0;
         int exitCount = 0;
 
-        if (width <= 0 || height <= 0 || tileSize <= 0) {
-            throw new IllegalArgumentException("Map dimensions must be positive");
-        }
 
         for (String key : properties.stringPropertyNames()) {
 
-            if (key.equals("width") || key.equals("height") || key.equals("tileSize")) {
+            if (key.equals("width") || key.equals("height") || key.equals("tileSize" ) ) {
                 continue;
             }
 
             String[] coords = key.trim().split(",");
-            int x = Integer.parseInt(coords[0]);
-            int y = Integer.parseInt(coords[1]);
+            if (coords.length!=2){
+                throw new IllegalArgumentException("Wrong type of coordinate");
+            }
+            int x = Integer.parseInt(coords[0].trim());
+            int y = Integer.parseInt(coords[1].trim());
 
             if (x < 0 || x >= width || y < 0 || y >= height) {
                 throw new IllegalArgumentException(
@@ -47,8 +46,13 @@ public class GameMap {
                     Integer.parseInt(properties.getProperty(key).trim())
             );
 
+            if (assigned[y][x]) {
+                throw new IllegalArgumentException("Duplicate tile coordinate");
+            }
+
             this.tiles[y][x] = tile;
             assigned[y][x] = true;
+
 
 
             if (tile == TileType.ENTRY) {
@@ -61,8 +65,7 @@ public class GameMap {
             if (tile == TileType.EXIT) {
                 exitCount++;
                 if (exitCount > 1) {
-                    throw new IllegalArgumentException("Map must have at least one exit");
-                }
+                    throw new IllegalArgumentException("Map must have exactly one exit");                }
             }
 
 
@@ -91,12 +94,13 @@ public class GameMap {
                     );
                 }
 
+
+
             }
         }
 
     }
 
-    // 4. Properties-dən map məlumatlarını oxuyan metodlar
 
     public int getHeight() {
         return height;
@@ -119,5 +123,5 @@ public class GameMap {
 
 
 
-    // 5. Tile məlumatlarını əldə edən getter metodları
+
 }
