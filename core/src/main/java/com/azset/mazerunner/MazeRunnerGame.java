@@ -10,10 +10,13 @@ import com.badlogic.gdx.Input;
 import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.OrthographicCamera;
 import com.badlogic.gdx.graphics.Texture;
+import com.badlogic.gdx.math.MathUtils;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
 import com.badlogic.gdx.utils.ScreenUtils;
 import com.badlogic.gdx.utils.viewport.FitViewport;
+import com.badlogic.gdx.InputAdapter;
+import com.azset.mazerunner.collision.CollisionSystem;
 
 public class MazeRunnerGame extends Game {
     private ShapeRenderer shapes;
@@ -22,8 +25,18 @@ public class MazeRunnerGame extends Game {
     private SpriteBatch batch;
     private Texture playerTexture;
     private FitViewport viewport;
+    private CollisionSystem collisionSystem;
+
 
     private MapRenderer mapRenderer;
+
+    private GameMap map;
+
+    private static final float VIEW_WIDTH = 240f;
+    private static final float VIEW_HEIGHT = 135f;
+
+    private static final float MIN_ZOOM = 0.75f;
+    private static final float MAX_ZOOM = 1.25f;
 
     @Override
     public void create() {
@@ -43,17 +56,16 @@ public class MazeRunnerGame extends Game {
         cam = new OrthographicCamera();
 
 
-        player = new Player(0, 112, 16);
+        player = new Player(16, 112, 16);
 
 
         MapLoader loader = new MapLoader();
 
-        GameMap map = loader.load("maps/level1.properties");
+        map = loader.load("maps/level2.properties");
 
-        float worldWidth = map.getWidth() * map.getTileSize();
-        float worldHeight = map.getHeight() * map.getTileSize();
+        collisionSystem = new CollisionSystem(map);
 
-        viewport = new FitViewport(worldWidth, worldHeight, cam);
+        viewport = new FitViewport(VIEW_WIDTH, VIEW_HEIGHT, cam);
 
         viewport.update(
                 Gdx.graphics.getWidth(),
@@ -61,7 +73,7 @@ public class MazeRunnerGame extends Game {
                 true
         );
 
-        mapRenderer = new MapRenderer(map, batch);
+        cam.zoom = 1f;
 
         mapRenderer = new MapRenderer(map, batch);
     }
@@ -71,25 +83,79 @@ public class MazeRunnerGame extends Game {
         float dt = Gdx.graphics.getDeltaTime();
 
         if (Gdx.input.isKeyPressed(Input.Keys.W)) {
-            player.move(0, 0.6f, dt);
+            collisionSystem.movePlayer(player, 0, 0.6f, dt);
         }
+
         if (Gdx.input.isKeyPressed(Input.Keys.S)) {
-            player.move(0, -0.6f, dt);
+            collisionSystem.movePlayer(player, 0, -0.6f, dt);
         }
+
         if (Gdx.input.isKeyPressed(Input.Keys.A)) {
-            player.move(-0.6f, 0, dt);
+            collisionSystem.movePlayer(player, -0.6f, 0, dt);
         }
+
         if (Gdx.input.isKeyPressed(Input.Keys.D)) {
-            player.move(0.6f, 0, dt);
+            collisionSystem.movePlayer(player, 0.6f, 0, dt);
         }
 
 
         ScreenUtils.clear(0.15f, 0.15f, 0.2f, 1);
 
+        viewport.apply();
+
+        cam.position.set(
+                player.getX() + player.getWidth() / 2f,
+                player.getY() + player.getHeight() / 2f,
+                0
+        );
+
+        float mapWidth = map.getWidth() * map.getTileSize();
+        float mapHeight = map.getHeight() * map.getTileSize();
+
+        float halfViewWidth = cam.viewportWidth * cam.zoom / 2f;
+        float halfViewHeight = cam.viewportHeight * cam.zoom / 2f;
+
+        if (mapWidth <= halfViewWidth * 2) {
+            cam.position.x = mapWidth / 2f;
+        } else {
+            cam.position.x = MathUtils.clamp(
+                    cam.position.x,
+                    halfViewWidth,
+                    mapWidth - halfViewWidth
+            );
+        }
+
+        if (mapHeight <= halfViewHeight * 2) {
+            cam.position.y = mapHeight / 2f;
+        } else {
+            cam.position.y = MathUtils.clamp(
+                    cam.position.y,
+                    halfViewHeight,
+                    mapHeight - halfViewHeight
+            );
+        }
+
         cam.update();
 
         batch.setProjectionMatrix(cam.combined);
         mapRenderer.render();
+
+        Gdx.input.setInputProcessor(new InputAdapter() {
+
+            @Override
+            public boolean scrolled(float amountX, float amountY) {
+
+                cam.zoom += amountY * 0.1f;
+
+                cam.zoom = MathUtils.clamp(
+                        cam.zoom,
+                        MIN_ZOOM,
+                        MAX_ZOOM
+                );
+
+                return true;
+            }
+        });
 
         batch.begin();
 
