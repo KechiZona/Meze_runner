@@ -1,32 +1,45 @@
+
 package com.azset.mazerunner.map;
+
 import java.util.Properties;
+import java.util.ArrayList;
+import java.util.List;
 
 public class GameMap {
-    // 1. Burada map-in ölçülərini saxlayan field-ləri yazacağıq.
+
     private final int width;
     private final int height;
     private final int tileSize;
 
+    private final List<int[]> keyCoordinates;
+    private final List<int[]> lifePickupCoordinates;
+    private final List<int[]> enemyCoordinates;
 
-
-    // 2. Burada tile-ları saxlayan 2D array olacaq.
     private final TileType[][] tiles;
 
-    // 3. Constructor
+    public GameMap(Properties properties) {
 
-    public GameMap(Properties properties){
+        if (Integer.parseInt(properties.getProperty("width")) <= 0
+                || Integer.parseInt(properties.getProperty("height")) <= 0
+                || Integer.parseInt(properties.getProperty("tileSize")) <= 0) {
+
+            throw new IllegalArgumentException("Map dimensions must be positive");
+        }
+
         this.width = Integer.parseInt(properties.getProperty("width"));
         this.height = Integer.parseInt(properties.getProperty("height"));
         this.tileSize = Integer.parseInt(properties.getProperty("tileSize"));
+
         this.tiles = new TileType[height][width];
+
         boolean[][] assigned = new boolean[height][width];
+
+        this.keyCoordinates = new ArrayList<>();
+        this.lifePickupCoordinates = new ArrayList<>();
+        this.enemyCoordinates = new ArrayList<>();
 
         int entryCount = 0;
         int exitCount = 0;
-
-        if (width <= 0 || height <= 0 || tileSize <= 0) {
-            throw new IllegalArgumentException("Map dimensions must be positive");
-        }
 
         for (String key : properties.stringPropertyNames()) {
 
@@ -34,44 +47,92 @@ public class GameMap {
                 continue;
             }
 
+            if (key.equals("key") || key.startsWith("key.")) {
+
+                addObjectCoordinate(
+                        key,
+                        properties.getProperty(key),
+                        keyCoordinates
+                );
+
+                continue;
+            }
+
+            if (key.equals("lifePickup") || key.startsWith("lifePickup.")) {
+
+                addObjectCoordinate(
+                        key,
+                        properties.getProperty(key),
+                        lifePickupCoordinates
+                );
+
+                continue;
+            }
+
+            if (key.equals("enemy") || key.startsWith("enemy.")) {
+
+                addObjectCoordinate(
+                        key,
+                        properties.getProperty(key),
+                        enemyCoordinates
+                );
+
+                continue;
+            }
+
             String[] coords = key.trim().split(",");
-            int x = Integer.parseInt(coords[0]);
-            int y = Integer.parseInt(coords[1]);
+
+            if (coords.length != 2) {
+                throw new IllegalArgumentException("Wrong type of coordinate");
+            }
+
+            int x = Integer.parseInt(coords[0].trim());
+            int y = Integer.parseInt(coords[1].trim());
 
             if (x < 0 || x >= width || y < 0 || y >= height) {
                 throw new IllegalArgumentException(
                         "Invalid coordinates: x=" + x + ", y=" + y
                 );
             }
+
             TileType tile = TileType.fromCode(
                     Integer.parseInt(properties.getProperty(key).trim())
             );
 
+            if (assigned[y][x]) {
+                throw new IllegalArgumentException("Duplicate tile coordinate");
+            }
+
             this.tiles[y][x] = tile;
             assigned[y][x] = true;
 
-
             if (tile == TileType.ENTRY) {
+
                 entryCount++;
+
                 if (entryCount > 1) {
-                    throw new IllegalArgumentException("Map must have exactly one entry");
+                    throw new IllegalArgumentException(
+                            "Map must have exactly one entry"
+                    );
                 }
             }
 
             if (tile == TileType.EXIT) {
+
                 exitCount++;
+
                 if (exitCount > 1) {
-                    throw new IllegalArgumentException("Map must have at least one exit");
+                    throw new IllegalArgumentException(
+                            "Map must have exactly one exit"
+                    );
                 }
             }
 
+            if (tile == TileType.ENTRY
+                    && !(x == 0 || x == width - 1 || y == 0 || y == height - 1)) {
 
-
-            if (tile == TileType.ENTRY &&
-                    !(x == 0 || x == width - 1 || y == 0 || y == height - 1)) {
                 throw new IllegalArgumentException("Entry must be on boundary");
             }
-
         }
 
         if (entryCount != 1) {
@@ -83,6 +144,7 @@ public class GameMap {
         }
 
         for (int y = 0; y < height; y++) {
+
             for (int x = 0; x < width; x++) {
 
                 if (!assigned[y][x]) {
@@ -90,13 +152,40 @@ public class GameMap {
                             "Missing tile at: x=" + x + ", y=" + y
                     );
                 }
-
             }
         }
-
     }
 
-    // 4. Properties-dən map məlumatlarını oxuyan metodlar
+    private void addObjectCoordinate(
+            String propertyName,
+            String coordinateValue,
+            List<int[]> targetList) {
+
+        if (coordinateValue == null || coordinateValue.isBlank()) {
+            throw new IllegalArgumentException(
+                    "Missing coordinates for: " + propertyName
+            );
+        }
+
+        String[] coordinates = coordinateValue.trim().split(",", -1);
+
+        if (coordinates.length != 2) {
+            throw new IllegalArgumentException(
+                    "Invalid coordinates for: " + propertyName
+            );
+        }
+
+        int x = Integer.parseInt(coordinates[0].trim());
+        int y = Integer.parseInt(coordinates[1].trim());
+
+        if (x < 0 || x >= width || y < 0 || y >= height) {
+            throw new IllegalArgumentException(
+                    "Object outside map: " + propertyName
+            );
+        }
+
+        targetList.add(new int[]{x, y});
+    }
 
     public int getHeight() {
         return height;
@@ -111,13 +200,32 @@ public class GameMap {
     }
 
     public TileType getTile(int x, int y) {
+
         if (x < 0 || x >= this.width || y < 0 || y >= this.height) {
-            throw new IllegalArgumentException("There is no tile at " + x + " " + y);
+            throw new IllegalArgumentException(
+                    "There is no tile at " + x + " " + y
+            );
         }
+
         return this.tiles[y][x];
     }
 
+    public int[] getEntryCoordinates() {
 
+        for (int y = 0; y < height; y++) {
 
-    // 5. Tile məlumatlarını əldə edən getter metodları
+            for (int x = 0; x < width; x++) {
+
+                if (tiles[y][x] == TileType.ENTRY) {
+                    return new int[]{x, y};
+                }
+            }
+        }
+
+        throw new IllegalStateException("Map has no ENTRY tile");
+    }
+
+    public List<int[]> getEnemyCoordinates() {
+        return enemyCoordinates;
+    }
 }
