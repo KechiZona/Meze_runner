@@ -43,7 +43,7 @@ public class CollisionSystem {
                 }
                 int mapY = map.getHeight() - 1 - y;
 
-                if (map.getTile(x, mapY) == TileType.WALL) {
+                if (map.getTile(x, mapY).isWall()) {
                     return true;
                 }
 

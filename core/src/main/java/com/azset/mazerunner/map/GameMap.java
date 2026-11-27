@@ -121,6 +121,21 @@ public class GameMap {
         return this.tiles[y][x];
     }
 
+    public int[] getEntryCoordinates() {
+
+        for (int y = 0; y < height; y++) {
+            for (int x = 0; x < width; x++) {
+
+                if (tiles[y][x] == TileType.ENTRY) {
+                    return new int[]{x, y};
+                }
+
+            }
+        }
+
+        throw new IllegalStateException("Map has no ENTRY tile");
+    }
+
 
 
 

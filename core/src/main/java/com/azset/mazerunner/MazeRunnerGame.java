@@ -44,7 +44,8 @@ public class MazeRunnerGame extends Game {
 
         playerTexture = new Texture(
                 Gdx.files.internal(
-                        "maze_runner_sprites/assets/player.png"
+                        // Player gorunusu.
+                        "maze_runner_sprites/assets/player1.png"
                 )
         );
 
@@ -56,12 +57,24 @@ public class MazeRunnerGame extends Game {
         cam = new OrthographicCamera();
 
 
-        player = new Player(16, 112, 16);
-
 
         MapLoader loader = new MapLoader();
 
-        map = loader.load("maps/level2.properties");
+        // Xerite buradan secilir.
+        map = loader.load("maps/level3.properties");
+
+        int[] entry = map.getEntryCoordinates();
+
+        float tileSize = map.getTileSize();
+        float playerSize = 12f;
+
+        float startX = entry[0] * tileSize;
+        float startY = (map.getHeight() - 1 - entry[1]) * tileSize;
+
+        startX += (tileSize - playerSize) / 2f;
+        startY += (tileSize - playerSize) / 2f;
+
+        player = new Player(startX, startY, playerSize);
 
         collisionSystem = new CollisionSystem(map);
 

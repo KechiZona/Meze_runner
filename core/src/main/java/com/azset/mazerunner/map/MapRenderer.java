@@ -1,5 +1,7 @@
 
 package com.azset.mazerunner.map;
+import java.util.EnumMap;
+import java.util.Map;
 
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.graphics.Texture;
@@ -11,35 +13,26 @@ public class MapRenderer implements Disposable {
     private final GameMap map;
     private final SpriteBatch batch;
 
-    private final Texture floorTexture;
-    private final Texture wallTexture;
-    private final Texture entryTexture;
-    private final Texture exitTexture;
-    private final Texture trapTexture;
-    private final Texture enemyTexture;
+    private final Map<TileType, Texture> textures =
+            new EnumMap<>(TileType.class);
+
+
 
     public MapRenderer(GameMap map, SpriteBatch batch) {
 
         this.map = map;
         this.batch = batch;
 
-        floorTexture = new Texture(Gdx.files.internal(
-                "maze_runner_sprites/assets/tile_floor.png"));
+        for (TileType tile : TileType.values()) {
 
-        wallTexture = new Texture(Gdx.files.internal(
-                "maze_runner_sprites/assets/tile_wall.png"));
+            Texture texture = new Texture(
+                    Gdx.files.internal(
+                            "maze_runner_sprites/assets/" + tile.getAssetName()
+                    )
+            );
 
-        entryTexture = new Texture(Gdx.files.internal(
-                "maze_runner_sprites/assets/tile_entry.png"));
-
-        exitTexture = new Texture(Gdx.files.internal(
-                "maze_runner_sprites/assets/tile_exit_locked.png"));
-
-        trapTexture = new Texture(Gdx.files.internal(
-                "maze_runner_sprites/assets/trap.png"));
-
-        enemyTexture = new Texture(Gdx.files.internal(
-                "maze_runner_sprites/assets/enemy.png"));
+            textures.put(tile, texture);
+        }
     }
 
     public void render() {
@@ -57,14 +50,8 @@ public class MapRenderer implements Disposable {
                 float drawY = (map.getHeight() - 1 - y)
                         * map.getTileSize();
 
-                Texture texture = switch (tile) {
-                    case PATH -> floorTexture;
-                    case WALL -> wallTexture;
-                    case ENTRY -> entryTexture;
-                    case EXIT -> exitTexture;
-                    case TRAP -> trapTexture;
-                    case ENEMY -> enemyTexture;
-                };
+                Texture texture = textures.get(tile);
+
                 batch.draw(
                         texture,
                         drawX,
@@ -81,11 +68,8 @@ public class MapRenderer implements Disposable {
     @Override
     public void dispose() {
 
-        floorTexture.dispose();
-        wallTexture.dispose();
-        entryTexture.dispose();
-        exitTexture.dispose();
-        trapTexture.dispose();
-        enemyTexture.dispose();
+        for (Texture texture : textures.values()) {
+            texture.dispose();
+        }
     }
 }
