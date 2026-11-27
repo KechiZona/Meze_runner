@@ -1,3 +1,4 @@
+
 package com.azset.mazerunner.map;
 
 public enum TileType {
@@ -7,7 +8,6 @@ public enum TileType {
     ENTRY(2, "tile_entry.png", false),
     EXIT(3, "tile_exit_locked.png", false),
     TRAP(4, "trap.png", false),
-    ENEMY(5, "enemy.png", false),
 
     PATH_02(6, "tile_floor_02.png", false),
     PATH_03(7, "tile_floor_03.png", false),

@@ -17,6 +17,10 @@ import com.badlogic.gdx.utils.ScreenUtils;
 import com.badlogic.gdx.utils.viewport.FitViewport;
 import com.badlogic.gdx.InputAdapter;
 import com.azset.mazerunner.collision.CollisionSystem;
+import com.azset.mazerunner.model.EnemyManager;
+import com.azset.mazerunner.model.EnemyRenderer;
+import com.azset.mazerunner.model.EnemyCollision;
+import com.badlogic.gdx.graphics.g2d.BitmapFont;
 
 public class MazeRunnerGame extends Game {
     private ShapeRenderer shapes;
@@ -26,6 +30,9 @@ public class MazeRunnerGame extends Game {
     private Texture playerTexture;
     private FitViewport viewport;
     private CollisionSystem collisionSystem;
+    private EnemyManager enemyManager;
+    private EnemyRenderer enemyRenderer;
+    private BitmapFont font;
 
 
     private MapRenderer mapRenderer;
@@ -89,26 +96,44 @@ public class MazeRunnerGame extends Game {
         cam.zoom = 1f;
 
         mapRenderer = new MapRenderer(map, batch);
+
+        enemyManager = new EnemyManager(map);
+        enemyRenderer = new EnemyRenderer();
+
+        font = new BitmapFont();
+        font.getData().setScale(0.7f);
     }
 
     @Override
     public void render() {
         float dt = Gdx.graphics.getDeltaTime();
 
-        if (Gdx.input.isKeyPressed(Input.Keys.W)) {
-            collisionSystem.movePlayer(player, 0, 0.6f, dt);
-        }
+        if (!player.isDead()) {
 
-        if (Gdx.input.isKeyPressed(Input.Keys.S)) {
-            collisionSystem.movePlayer(player, 0, -0.6f, dt);
-        }
+            player.update(dt);
 
-        if (Gdx.input.isKeyPressed(Input.Keys.A)) {
-            collisionSystem.movePlayer(player, -0.6f, 0, dt);
-        }
+            if (Gdx.input.isKeyPressed(Input.Keys.W)) {
+                collisionSystem.movePlayer(player, 0, 0.6f, dt);
+            }
 
-        if (Gdx.input.isKeyPressed(Input.Keys.D)) {
-            collisionSystem.movePlayer(player, 0.6f, 0, dt);
+            if (Gdx.input.isKeyPressed(Input.Keys.S)) {
+                collisionSystem.movePlayer(player, 0, -0.6f, dt);
+            }
+
+            if (Gdx.input.isKeyPressed(Input.Keys.A)) {
+                collisionSystem.movePlayer(player, -0.6f, 0, dt);
+            }
+
+            if (Gdx.input.isKeyPressed(Input.Keys.D)) {
+                collisionSystem.movePlayer(player, 0.6f, 0, dt);
+            }
+
+            enemyManager.update(dt, player);
+
+            EnemyCollision.checkCollisions(
+                    player,
+                    enemyManager
+            );
         }
 
 
@@ -171,6 +196,7 @@ public class MazeRunnerGame extends Game {
         });
 
         batch.begin();
+        enemyRenderer.render(batch, enemyManager);
 
 
 
@@ -194,5 +220,7 @@ public class MazeRunnerGame extends Game {
         mapRenderer.dispose();
         batch.dispose();
         playerTexture.dispose();
+        enemyRenderer.dispose();
+        font.dispose();
     }
 }
